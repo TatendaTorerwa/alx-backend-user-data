@@ -1,4 +1,4 @@
-# 0x03. User Authentication
+# 0x01. Basic authentication
 
 ## Resources
 Read or watch:
