@@ -7,32 +7,28 @@ from typing import List, TypeVar
 
 class Auth:
     """ Class to manage the API authentication """
-
     def require_auth(self, path: str, excluded_paths: List[str]) -> bool:
         """ Method for validating if endpoint requires auth """
-        if path is None or excluded_paths is None or excluded_paths == []:
+        if path is None:
             return True
 
-        l_path = len(path)
-        if l_path == 0:
+        if excluded_paths is None or not excluded_paths:
             return True
 
-        slash_path = True if path[l_path - 1] == '/' else False
+        slash_path = path.endswith('/')
 
         tmp_path = path
         if not slash_path:
             tmp_path += '/'
 
-        for exc in excluded_paths:
-            l_exc = len(exc)
-            if l_exc == 0:
-                continue
-
-            if exc[l_exc - 1] != '*':
-                if tmp_path == exc:
+        for excluded_path in excluded_paths:
+            if excluded_path.endswith('*'):
+                # if the path starts with the excluded path without the '*'
+                if path.startswith(excluded_path[:-1]):
                     return False
             else:
-                if exc[:-1] == path[:l_exc - 1]:
+                # Check if the path exactly matches the excluded path
+                if tmp_path == excluded_path:
                     return False
 
         return True
