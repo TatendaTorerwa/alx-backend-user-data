@@ -102,18 +102,12 @@ def get_reset_password_token(self, email: str) -> str:
             str: A string representing the password reset token generated for
             the user.
         """
-        # Find the user with the specified email address
-        try:
-            user = self._db.find_user_by(email=email)
-        except NoResultFound:
-            user = None
-        # If no user is found with specified email address, raise a ValueError
-        if user is None:
-            raise ValueError()
-        # Generate a new password reset token & update the user's record in db
+        user = self._db.get_user_by_email(email)
+        if not user:
+            raise ValueError("User with email {} does not exist".format(email))
+        
         reset_token = _generate_uuid()
-        self._db.update_user(user.id, reset_token=reset_token)
-        # Return the generated password reset token
+        self._db.update_reset_token(user.id, reset_token)
         return reset_token
 
 def update_password(self, reset_token: str, password: str) -> None:
@@ -130,20 +124,13 @@ def update_password(self, reset_token: str, password: str) -> None:
         Returns:
             None
         """
-        # Find user associated with reset_token
-        try:
-            user = self._db.find_user_by(reset_token=reset_token)
-        except NoResultFound:
-            # If no user found with given reset_token, raise ValueError
+        user = self._db.get_user_by_reset_token(reset_token)
+        if not user:
             raise ValueError("Invalid reset token")
-        # Hash the new password
-        new_hashed_password = _hash_password(password)
-        # Update the user's hashed password and the reset_token field to None
-        self._db.update_user(
-            user.id,
-            hashed_password=new_hashed_password,
-            reset_token=None,
-        )
+
+        hashed_password = _hash_password(new_password)
+        self._db.update_password(user.id, hashed_password)
+        self._db.clear_reset_token(user.id)
 
 def _hash_password(password: str) -> bytes:
     """ Creates password hash
