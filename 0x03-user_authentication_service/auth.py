@@ -88,38 +88,62 @@ class Auth:
         db = self._db
         db.update_user(user_id, session_id=None)
 
-    def get_reset_password_token(self, email: str) -> str:
-        """ Generates reset password token for valid user
-            Args:
-                - email: user's email
-            Return:
-                - reset password token
+def get_reset_password_token(self, email: str) -> str:
+        """Generates a password reset token for a user.
+
+        Args:
+            email (str): A string representing the email address of the user to
+            generate a password reset token for.
+
+        Raises:
+            ValueError: If no user with the specified email address is found.
+
+        Returns:
+            str: A string representing the password reset token generated for
+            the user.
         """
-        db = self._db
+        # Find the user with the specified email address
         try:
-            user = db.find_user_by(email=email)
+            user = self._db.find_user_by(email=email)
         except NoResultFound:
-            raise ValueError
+            user = None
+        # If no user is found with specified email address, raise a ValueError
+        if user is None:
+            raise ValueError()
+        # Generate a new password reset token & update the user's record in db
         reset_token = _generate_uuid()
-        db.update_user(user.id, reset_token=reset_token)
+        self._db.update_user(user.id, reset_token=reset_token)
+        # Return the generated password reset token
         return reset_token
 
-    def update_password(self, reset_token: str, password: str) -> None:
-        """ Update password for user with matching reset token
-            Args:
-                - reset_toke: user's reset token
-                - password: new password
-            Return:
-                - None
-        """
-        db = self._db
-        try:
-            user = db.find_user_by(reset_token=reset_token)
-        except NoResultFound:
-            raise ValueError
-        db.update_user(user.id, hashed_password=_hash_password(password),
-                       reset_token=None)
+def update_password(self, reset_token: str, password: str) -> None:
+        """Updates a user's password using a reset token.
 
+        Args:
+            reset_token (str): The reset token associated with the user.
+            password (str): The new password to set.
+
+        Raises:
+            ValueError: If the reset token is invalid (i.e., not associated
+            with a user)..
+
+        Returns:
+            None
+        """
+        # Find user associated with reset_token
+        try:
+            user = self._db.find_user_by(reset_token=reset_token)
+        except NoResultFound:
+            # If no user found with given reset_token, raise ValueError
+            raise ValueError("Invalid reset token")
+        # Hash the new password
+        new_hashed_password = _hash_password(password)
+        # Update the user's hashed password and the reset_token field to None
+        self._db.update_user(
+            user.id,
+            hashed_password=new_hashed_password,
+            reset_token=None,
+        )
 
 def _hash_password(password: str) -> bytes:
     """ Creates password hash
